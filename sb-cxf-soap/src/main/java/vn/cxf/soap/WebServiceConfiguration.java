@@ -10,32 +10,50 @@ import org.springframework.boot.context.embedded.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import de.codecentric.namespace.weatherservice.Weather;
 import de.codecentric.namespace.weatherservice.WeatherService;
 import vn.cxf.soap.endpoint.WeatherServiceEndpoint;
 
 @Configuration
 public class WebServiceConfiguration {
-	
-    @Bean
-    public ServletRegistrationBean cxfServlet() {
-        return new ServletRegistrationBean(new CXFServlet(), "/soap-api/*");
-    }
 
-    @Bean(name = Bus.DEFAULT_BUS_ID)
-    public SpringBus springBus() {
-        return new SpringBus();
-    }    
-    
-    @Bean
-    public WeatherService weatherService() {
-    	return new WeatherServiceEndpoint();
-    }
-    
-    @Bean
-    public Endpoint endpoint() {
-        EndpointImpl endpoint = new EndpointImpl(springBus(), weatherService());
-        endpoint.publish("/WeatherSoapService_1.0_VN");
-        endpoint.setWsdlLocation("Weather1.0.wsdl");
-        return endpoint;
-    }
+	public static final String BASE_URL = "/soap-api";
+	public static final String SERVICE_URL = "/WeatherSoapService_1.0";
+
+	@Bean
+	public ServletRegistrationBean cxfServlet() {
+		return new ServletRegistrationBean(new CXFServlet(), BASE_URL + "/*");
+	}
+
+	@Bean(name = Bus.DEFAULT_BUS_ID)
+	public SpringBus springBus() {
+		return new SpringBus();
+	}
+
+	@Bean
+	public WeatherService weatherService() {
+		return new WeatherServiceEndpoint();
+	}
+
+	@Bean
+	public Endpoint endpoint() {
+		EndpointImpl endpoint = new EndpointImpl(springBus(), weatherService());
+		// CXF JAX-WS implementation relies on the correct ServiceName as
+		// QName-Object with
+		// the name-Attribute´s text <wsdl:service name="Weather"> and the
+		// targetNamespace
+		// "http://www.codecentric.de/namespace/weatherservice/"
+		// Also the WSDLLocation must be set
+		endpoint.setServiceName(weather().getServiceName());
+		endpoint.setWsdlLocation(weather().getWSDLDocumentLocation().toString());
+		endpoint.publish(SERVICE_URL);
+		return endpoint;
+	}
+
+	@Bean
+	public Weather weather() {
+		// Needed for correct ServiceName & WSDLLocation to publish contract
+		// first incl. original WSDL
+		return new Weather();
+	}
 }
